@@ -7,7 +7,7 @@ LIBS += -lpcap
 SOURCES += \
         arphdr.cpp \
         ethhdr.cpp \
-        ip.cpp \
+        getIpAddr.cpp \
         mac.cpp \
         main.cpp \
         getmac.cpp
@@ -15,6 +15,7 @@ SOURCES += \
 HEADERS += \
     arphdr.h \
     ethhdr.h \
-    ip.h \
+    getIpAddr.h \
     mac.h \
-    getmac.h
+    getmac.h \
+

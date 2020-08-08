@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.11.2, 2020-08-03T10:59:41. -->
+<!-- Written by QtCreator 4.11.2, 2020-08-08T12:37:40. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -285,9 +285,10 @@
     </valuelist>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/home/handfriendship/Desktop/_BoB_network/arp/send-arp-test/src/send-arp-test.pro</value>
-    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">/home/handfriendship/Desktop/_BoB_network/arp/send-arp-test/src/send-arp-test.pro</value>
-    <value type="QString" key="RunConfiguration.Arguments"></value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">send-arp-test2</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/home/handfriendship/Desktop/_BoB_network/arp-spoofing/send-arp-test.pro</value>
+    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">/home/handfriendship/Desktop/_BoB_network/arp-spoofing/send-arp-test.pro</value>
+    <value type="QString" key="RunConfiguration.Arguments">ens33 172.30.1.40 172.30.1.254</value>
     <value type="bool" key="RunConfiguration.Arguments.multi">false</value>
     <value type="QString" key="RunConfiguration.OverrideDebuggerStartup"></value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">false</value>

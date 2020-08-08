@@ -47,7 +47,7 @@ char* getMacAddr (char *argv)
 		
 
 	out = ether_ntoa ((struct ether_addr *) sa->sa_data);
-	printf("in getmac.cpp : %s\n", out);
+    //printf("in getmac.cpp : %s\n", out);
 	//printf ("%s\n", out);
 
 	return out;
