@@ -299,17 +299,18 @@ int main(int argc, char* argv[]) {
         strcpy(ihdr_sip_4, inet_ntoa((ihdr->ip_srcaddr)));
         strcpy(ihdr_dip_4, inet_ntoa((ihdr->ip_destaddr)));
 
-        printf("ehdr_dmac : %s\n", ehdr_dmac_4);
-        printf("ehdr_proto : %u\n", ehdr_proto_4);
-        printf("idhr_sip : %s\n", ihdr_sip_4);
-        printf("idhr_dip : %s\n", ihdr_dip_4);
+        printf("stage 4 \n");
+        printf("ehdr_dmac_4 : %s\n", ehdr_dmac_4); // desired value : 00:07:89:63:05:5d
+        printf("ehdr_proto_4 : %u\n", ehdr_proto_4);
+        printf("idhr_sip_4 : %s\n", ihdr_sip_4); // desired value : 172.30.1.40
+        printf("idhr_dip_4 : %s\n", ihdr_dip_4); // desired value : 172.30.1.254
 
         //int cmp = strcmp(ehdr_dmac_4, myMacAddr);
         //bool flag1 = cmp ? 0 : 1;
         bool flag2 = ehdr_proto_4 == 2048;
         //bool flag3 = ihdr_op == 2;
-        bool flag3 = strcmp(ihdr_sip_4, sender_ip);
-        bool flag4 = strcmp(ihdr_dip_4, target_ip);
+        bool flag3 = strcmp(ihdr_sip_4, sender_ip) == 0 ? 1 : 0;
+        bool flag4 = strcmp(ihdr_dip_4, target_ip) == 0 ? 1 : 0;
         printf("flag : %d %d %d\n", flag2, flag3, flag4);
 
         if(flag2 && flag3 && flag4){
