@@ -55,22 +55,23 @@ int main(int argc, char* argv[]){
 	send_packet(ip1, ... );
 
 	// Stage6
-	receivePacket(); // while(1) .. // get ARP request packet
+	receivePacket(); // while(1) .. 
+	// get ARP request packet
+	// get ARP broadcast packet 	
+	// packet in order to update its arp-table 
 
 	// Stage7
 	ARP_packet arp_unicast = new ARP_packet(ethersrc, etherdest, ..);
 	send_packet(arp_unicast, ... );
 
 	// Stage8
-	receivePacket(); // while(1) .. // get ARP broadcast packet 
-
-	// Stage9
 	ARP_packet arp_attack2 = new ARP_packet(ethersrc, etherdest, ..);
 	send_packet(arp_attack2, ... );
 
 }
 
-
+// wireshark filter command
+// arp || eth.addr == 00:0c:29:f2:41:76 || eth.addr == a0:c5:89:77:cb:03 
 
 
 
