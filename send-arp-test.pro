@@ -11,7 +11,8 @@ SOURCES += \
         getIpAddr.cpp \
         mac.cpp \
         main.cpp \
-        getmac.cpp
+        getmac.cpp \
+        ip.cpp
 
 HEADERS += \
     arphdr.h \
@@ -19,4 +20,5 @@ HEADERS += \
     getIpAddr.h \
     mac.h \
     getmac.h \
+    ip.h
 

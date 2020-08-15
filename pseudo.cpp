@@ -30,43 +30,50 @@ void receivePacket(){ // not good .. it's better not to extract code as func.
 	sprintf();
 }
 
-
-
-int main(int argc, char* argv[]){
-	
+int getSomeoneMacAddr(){
 	// Stage1
 	ARP_packet arp1 = new ARP_packet(ethersrc, etherdest, arpop, ..);
 	send_packet(arp1, .. );
 
 	// Stage2
 	receivePakcet();	// while(1) .. // get sender's Mac
+}
 
-	// Stage3
-	ARP_packet arp_attack1 = new ARP_packet(ethersrc, etherdest, arpop, ..);
-	send_packet(arp_attack1, .. );
+int main(int argc, char* argv[]){
 	
-	// Stage4
-	char* result = receivePacket(); 
-	// while(1) ... // get spoofed IP packet
+	char* victimMacAddr = getSomeoneMacAddr();
+	char* targetMacAddr = getSomeoneMacAddr();
+	
+	while(true){
+		// Stage3
+		ARP_packet arp_attack1 = new ARP_packet(ethersrc, etherdest, arpop, ..);
+		send_packet(arp_attack1, .. );
+	
+		// Stage4
+		char* result = receivePacket(); 
+		// while(1) ... // get spoofed IP packet
 
-	IP_packet ip1 = new IP_packet(result, ... ); 
+		IP_packet ip1 = new IP_packet(result, ... ); 
 
-	// Stage5
-	send_packet(ip1, ... );
+		// Stage5
+		send_packet(ip1, ... );
 
-	// Stage6
-	receivePacket(); // while(1) .. 
-	// get ARP request packet
-	// get ARP broadcast packet 	
-	// packet in order to update its arp-table 
+		// Stage6
+		receivePacket(); // while(1) .. 
+		// get ARP unicast packet
+		// get ARP broadcast packet 	
+		// packet in order to update its arp-table 
+		// if ARP unicast packet -> reply -> still do while
+		// if ARP broadcast packet -> break while -> do again
 
-	// Stage7
-	ARP_packet arp_unicast = new ARP_packet(ethersrc, etherdest, ..);
-	send_packet(arp_unicast, ... );
+		// Stage7
+		ARP_packet arp_unicast = new ARP_packet(ethersrc, etherdest, ..);
+		send_packet(arp_unicast, ... );
 
-	// Stage8
-	ARP_packet arp_attack2 = new ARP_packet(ethersrc, etherdest, ..);
-	send_packet(arp_attack2, ... );
+		// Stage8
+		ARP_packet arp_attack2 = new ARP_packet(ethersrc, etherdest, ..);
+		send_packet(arp_attack2, ... );
+	}
 
 }
 
